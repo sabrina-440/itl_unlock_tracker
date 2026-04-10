@@ -1,6 +1,9 @@
 # itl_unlock_tracker
 ITL2026 unlock tracker bc I am lazy
 https://itlunlocks.saberwing440.com/ 
+
+fyi it is rate limited to once every 5 minutes to not overload my server (it is locally hosted)
+
 ## instructions
 deploy:
 
