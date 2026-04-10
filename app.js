@@ -136,13 +136,19 @@ function buildTable(groups) {
     }
 }
 
-// --- Fetch entrant data from server ---
+// --- Fetch entrant data via proxy ---
 async function fetchEntrantData(num) {
-    const resp = await fetch(`/api/cleared/${num}`);
-    if (!resp.ok) throw new Error('Server error: ' + resp.status);
+    const resp = await fetch(`/gs/${num}`);
+    if (resp.status === 404) throw new Error('Entrant not found');
+    if (!resp.ok) throw new Error('API error: ' + resp.status);
     const data = await resp.json();
-    if (data.error) throw new Error(data.error);
-    return data;
+    // Extract all title fields and join into one string for substring matching
+    const titles = [];
+    JSON.stringify(data, (key, value) => {
+        if (key === 'title' && typeof value === 'string') titles.push(value);
+        return value;
+    });
+    return titles.join('\n');
 }
 
 // --- Matching ---
@@ -192,17 +198,16 @@ async function loadEntrant() {
     const btn = document.getElementById('load-btn');
     btn.disabled = true;
     document.getElementById('manual-fallback').style.display = 'none';
-    setStatus('Scraping GrooveStats (this takes a few seconds)...', '');
+    setStatus('Fetching data from GrooveStats...', '');
 
     history.replaceState(null, '', `?entrant=${num}`);
     document.getElementById('gs-link').href = `https://itl2026.groovestats.com/entrant/${num}?clearType=1`;
 
     try {
-        const data = await fetchEntrantData(num);
-        highlightCells(data.text);
-        if (data.cached) setStatus(document.getElementById('status').textContent + ' (cached)', 'success');
+        const text = await fetchEntrantData(num);
+        highlightCells(text);
     } catch (e) {
-        setStatus('Server error: ' + e.message + '. Use manual paste below.', 'error');
+        setStatus('Error: ' + e.message + '. Use manual paste below.', 'error');
         document.getElementById('manual-fallback').style.display = 'block';
     } finally {
         btn.disabled = false;
