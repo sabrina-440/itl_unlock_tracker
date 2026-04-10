@@ -142,35 +142,50 @@ async function fetchEntrantData(num) {
     if (resp.status === 404) throw new Error('Entrant not found');
     if (!resp.ok) throw new Error('API error: ' + resp.status);
     const data = await resp.json();
-    // Extract all title fields and join into one string for substring matching
-    const titles = [];
-    JSON.stringify(data, (key, value) => {
-        if (key === 'title' && typeof value === 'string') titles.push(value);
-        return value;
-    });
-    return titles.join('\n');
-}
-
-// --- Matching ---
-function isSongCleared(songName, lowerText) {
-    if (!songName || songName.length <= 1) return lowerText.includes(songName ? songName.toLowerCase() : '');
-    return lowerText.includes(songName.toLowerCase());
+    // Build a set of lowercase song titles that are unlocked (unlockId !== -1)
+    const charts = data?.data?.charts || [];
+    const cleared = new Set();
+    for (const chart of charts) {
+        if (chart.title && chart.unlockId !== -1) {
+            cleared.add(chart.title.toLowerCase());
+        }
+    }
+    return cleared;
 }
 
 // --- Highlighting ---
-function highlightCells(pageText) {
-    const lower = pageText.toLowerCase();
-    let cleared = 0, total = 0;
-    document.querySelectorAll('.song-cell').forEach(cell => {
+function highlightCells(clearedSet) {
+    // First pass: mark unlock cells that match
+    document.querySelectorAll('.song-cell.unlock-col').forEach(cell => {
         const name = cell.dataset.song;
         if (!name) return;
-        total++;
         cell.classList.remove('cleared', 'not-cleared');
-        if (isSongCleared(name, lower)) { cell.classList.add('cleared'); cleared++; }
+        if (clearedSet.has(name.toLowerCase())) { cell.classList.add('cleared'); }
         else { cell.classList.add('not-cleared'); }
     });
+
+    // Second pass: highlight requirement cells only if any unlock in the same group is cleared
+    let cleared = 0, total = 0;
+    document.querySelectorAll('tbody[data-group]').forEach(tbody => {
+        const unlockCells = tbody.querySelectorAll('.unlock-col.song-cell');
+        const hasAnyUnlock = [...unlockCells].some(c => c.classList.contains('cleared'));
+
+        tbody.querySelectorAll('.req-col.song-cell').forEach(cell => {
+            const name = cell.dataset.song;
+            if (!name) return;
+            total++;
+            cell.classList.remove('cleared', 'not-cleared');
+            if (hasAnyUnlock) { cell.classList.add('cleared'); cleared++; }
+            else { cell.classList.add('not-cleared'); }
+        });
+
+        // Count unlock cells too
+        unlockCells.forEach(cell => { if (cell.dataset.song) total++; });
+        cleared += [...unlockCells].filter(c => c.classList.contains('cleared')).length;
+    });
+
     updateGroupCompletion();
-    setStatus(`Matched ${cleared} / ${total} songs.`, 'success');
+    setStatus(`Matched ${cleared} / ${total} songs. green = unlocked (cannot track played :/)`, 'success');
 }
 
 function updateGroupCompletion() {
@@ -204,8 +219,8 @@ async function loadEntrant() {
     document.getElementById('gs-link').href = `https://itl2026.groovestats.com/entrant/${num}?clearType=1`;
 
     try {
-        const text = await fetchEntrantData(num);
-        highlightCells(text);
+        const clearedSet = await fetchEntrantData(num);
+        highlightCells(clearedSet);
     } catch (e) {
         setStatus('Error: ' + e.message + '. Use manual paste below.', 'error');
         document.getElementById('manual-fallback').style.display = 'block';
@@ -227,7 +242,10 @@ document.getElementById('entrant-form').addEventListener('submit', e => {
 document.getElementById('paste-btn').addEventListener('click', () => {
     const text = document.getElementById('paste-area').value;
     if (!text.trim()) return;
-    highlightCells(text);
+    // Build a set from pasted text — treat each line as a song title
+    const lines = text.split('\n').map(l => l.trim().toLowerCase()).filter(Boolean);
+    const pastedSet = new Set(lines);
+    highlightCells(pastedSet);
     document.getElementById('manual-fallback').style.display = 'none';
 });
 
