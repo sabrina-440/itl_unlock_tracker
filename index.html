@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ITL 2026 Unlock Tracker</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="container">
+    <header>
+        <h1>ITL 2026 Unlock Tracker</h1>
+        <form id="entrant-form">
+            <label for="entrant-input">Entrant #:</label>
+            <input type="number" id="entrant-input" min="1" placeholder="e.g. 1234">
+            <button type="submit" id="load-btn">Load</button>
+        </form>
+        <div id="status"></div>
+    </header>
+    <div id="manual-fallback">
+        <p>Automatic fetch failed. Please <a id="gs-link" target="_blank" rel="noopener">open your GrooveStats page</a>, select all (Ctrl/Cmd+A), copy (Ctrl/Cmd+C), and paste below:</p>
+        <textarea id="paste-area" rows="5" placeholder="Paste page content here..."></textarea>
+        <br><button id="paste-btn">Process</button>
+    </div>
+    <div class="table-wrapper">
+        <table id="unlock-table"></table>
+    </div>
+    <footer>
+        <a href="https://github.com/sabrina-440/itl_unlock_tracker" target="_blank" rel="noopener" class="github-link">GitHub</a>
+    </footer>
+</div>
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
