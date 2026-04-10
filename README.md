@@ -4,6 +4,9 @@ https://itlunlocks.saberwing440.com/
 
 fyi it is rate limited to once every 5 minutes to not overload my server (it is locally hosted)
 
+## DISCLAIMER: 
+I am not a webdev, idk what I am doing. Code critique is very welcome! 
+
 ## instructions
 deploy:
 
