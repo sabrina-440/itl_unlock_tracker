@@ -170,7 +170,7 @@ function highlightCells(pageText) {
         else { cell.classList.add('not-cleared'); }
     });
     updateGroupCompletion();
-    setStatus(`Matched ${cleared} / ${total} songs. green = played`, 'success');
+    setStatus(`Matched ${cleared} / ${total} songs.`, 'success');
 }
 
 function updateGroupCompletion() {
