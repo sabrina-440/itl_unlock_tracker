@@ -144,28 +144,45 @@ async function fetchEntrantData(num) {
     const data = await resp.json();
     // Build a set of lowercase song titles that are unlocked (unlockId !== -1)
     const charts = data?.data?.charts || [];
+    const topScores = data?.data?.topScores || [];
     const cleared = new Set();
+    const unlocked = new Set();
+    const played = new Set();
+    for (const chart of topScores) {
+        played.add(chart.hash);
+    }
+    
     for (const chart of charts) {
         if (chart.title && chart.unlockId !== -1) {
-            cleared.add(chart.title.toLowerCase());
+            if (played.has(chart.hash)) {
+                cleared.add(chart.title.toLowerCase());
+            } else {
+                unlocked.add(chart.title.toLowerCase());
+            }
         }
     }
-    return cleared;
+    return { cleared, unlocked };
 }
 
 // --- Highlighting ---
-function highlightCells(clearedSet) {
-    // First pass: mark unlock cells that match
+function highlightCells(clearedSet, unlockedSet) {
+    unlockedSet = unlockedSet || new Set();
+
+    // First pass: mark unlock cells — always green if matched
     document.querySelectorAll('.song-cell.unlock-col').forEach(cell => {
         const name = cell.dataset.song;
         if (!name) return;
-        cell.classList.remove('cleared', 'not-cleared');
-        if (clearedSet.has(name.toLowerCase())) { cell.classList.add('cleared'); }
-        else { cell.classList.add('not-cleared'); }
+        const lower = name.toLowerCase();
+        cell.classList.remove('cleared', 'unlocked', 'not-cleared');
+        if (clearedSet.has(lower) || unlockedSet.has(lower)) {
+            cell.classList.add('cleared');
+        } else {
+            cell.classList.add('not-cleared');
+        }
     });
 
-    // Second pass: highlight requirement cells only if any unlock in the same group is cleared
-    let cleared = 0, total = 0;
+    // Second pass: highlight requirement cells — green if cleared, purple if only unlocked
+    let matched = 0, total = 0;
     document.querySelectorAll('tbody[data-group]').forEach(tbody => {
         const unlockCells = tbody.querySelectorAll('.unlock-col.song-cell');
         const hasAnyUnlock = [...unlockCells].some(c => c.classList.contains('cleared'));
@@ -173,19 +190,30 @@ function highlightCells(clearedSet) {
         tbody.querySelectorAll('.req-col.song-cell').forEach(cell => {
             const name = cell.dataset.song;
             if (!name) return;
+            const lower = name.toLowerCase();
             total++;
-            cell.classList.remove('cleared', 'not-cleared');
-            if (hasAnyUnlock) { cell.classList.add('cleared'); cleared++; }
-            else { cell.classList.add('not-cleared'); }
+            cell.classList.remove('cleared', 'unlocked', 'not-cleared');
+            if (hasAnyUnlock) {
+                if (clearedSet.has(lower)) {
+                    cell.classList.add('cleared');
+                } else if (unlockedSet.has(lower)) {
+                    cell.classList.add('unlocked');
+                } else {
+                    cell.classList.add('cleared');
+                }
+                matched++;
+            } else {
+                cell.classList.add('not-cleared');
+            }
         });
 
         // Count unlock cells too
         unlockCells.forEach(cell => { if (cell.dataset.song) total++; });
-        cleared += [...unlockCells].filter(c => c.classList.contains('cleared')).length;
+        matched += [...unlockCells].filter(c => c.classList.contains('cleared')).length;
     });
 
     updateGroupCompletion();
-    setStatus(`Matched ${cleared} / ${total} songs. green = unlocked (cannot track played yet!)`, 'success');
+    setStatus(`Matched ${matched} / ${total} songs. green = cleared, purple = unlocked`, 'success');
 }
 
 function updateGroupCompletion() {
@@ -219,8 +247,8 @@ async function loadEntrant() {
     document.getElementById('gs-link').href = `https://itl2026.groovestats.com/entrant/${num}?clearType=1`;
 
     try {
-        const clearedSet = await fetchEntrantData(num);
-        highlightCells(clearedSet);
+        const { cleared, unlocked } = await fetchEntrantData(num);
+        highlightCells(cleared, unlocked);
     } catch (e) {
         setStatus('Error: ' + e.message + '. Use manual paste below.', 'error');
         document.getElementById('manual-fallback').style.display = 'block';
