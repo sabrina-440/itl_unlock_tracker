@@ -161,11 +161,12 @@ async function fetchEntrantData(num) {
             }
         }
     }
-    return { cleared, unlocked };
+    const entrantName = data?.data?.entrant?.name || num;
+    return { cleared, unlocked, entrantName };
 }
 
 // --- Highlighting ---
-function highlightCells(clearedSet, unlockedSet) {
+function highlightCells(clearedSet, unlockedSet, entrantName) {
     unlockedSet = unlockedSet || new Set();
 
     // First pass: mark unlock cells — always green if matched
@@ -213,7 +214,7 @@ function highlightCells(clearedSet, unlockedSet) {
     });
 
     updateGroupCompletion();
-    setStatus(`Matched ${matched} / ${total} songs. green = cleared, purple = unlocked`, 'success');
+    setStatus(`Matched for user ${entrantName || 'unknown'}: ${matched} / ${total} songs. green = cleared, purple = unlocked`, 'success');
 }
 
 function updateGroupCompletion() {
@@ -247,8 +248,8 @@ async function loadEntrant() {
     document.getElementById('gs-link').href = `https://itl2026.groovestats.com/entrant/${num}?clearType=1`;
 
     try {
-        const { cleared, unlocked } = await fetchEntrantData(num);
-        highlightCells(cleared, unlocked);
+        const { cleared, unlocked, entrantName } = await fetchEntrantData(num);
+        highlightCells(cleared, unlocked, entrantName);
     } catch (e) {
         setStatus('Error: ' + e.message + '. Use manual paste below.', 'error');
         document.getElementById('manual-fallback').style.display = 'block';
