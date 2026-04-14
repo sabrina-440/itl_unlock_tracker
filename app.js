@@ -185,7 +185,7 @@ function highlightCells(clearedSet) {
     });
 
     updateGroupCompletion();
-    setStatus(`Matched ${cleared} / ${total} songs. green = unlocked (cannot track played :/)`, 'success');
+    setStatus(`Matched ${cleared} / ${total} songs. green = unlocked (cannot track played yet!)`, 'success');
 }
 
 function updateGroupCompletion() {
