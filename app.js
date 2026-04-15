@@ -221,7 +221,7 @@ function updateGroupCompletion() {
     document.querySelectorAll('tbody[data-group]').forEach(tbody => {
         const reqCells = tbody.querySelectorAll('.req-col.song-cell');
         if (reqCells.length === 0) return;
-        const allCleared = [...reqCells].every(c => c.classList.contains('cleared'));
+        const allCleared = [...reqCells].some(c => c.classList.contains('cleared') || c.classList.contains('unlocked'));
         const nameCell = tbody.querySelector('.unlock-name');
         if (nameCell) nameCell.classList.toggle('complete', allCleared);
     });
