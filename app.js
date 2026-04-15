@@ -156,9 +156,9 @@ async function fetchEntrantData(num) {
         if (chart.title && chart.unlockId !== -1) {
             if (played.has(chart.hash)) {
                 cleared.add(chart.title.toLowerCase());
-            } else {
-                unlocked.add(chart.title.toLowerCase());
             }
+            unlocked.add(chart.title.toLowerCase());
+            
         }
     }
     const entrantName = data?.data?.entrant?.name || num;
@@ -194,18 +194,18 @@ function highlightCells(clearedSet, unlockedSet, entrantName) {
             const lower = name.toLowerCase();
             total++;
             cell.classList.remove('cleared', 'unlocked', 'not-cleared');
-            if (hasAnyUnlock) {
+            
                 if (clearedSet.has(lower)) {
                     cell.classList.add('cleared');
                 } else if (unlockedSet.has(lower)) {
                     cell.classList.add('unlocked');
                 } else {
-                    cell.classList.add('cleared');
+                    cell.classList.add('not-cleared');
                 }
                 matched++;
-            } else {
-                cell.classList.add('not-cleared');
-            }
+            
+                
+            
         });
 
         // Count unlock cells too
