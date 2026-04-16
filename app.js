@@ -136,81 +136,71 @@ function buildTable(groups) {
     }
 }
 
+// --- Song hash map (loaded from song_hash_map.js) ---
+const songHashMap = SONG_HASH_MAP;
+
 // --- Fetch entrant data via proxy ---
 async function fetchEntrantData(num) {
     const resp = await fetch(`/gs/${num}`);
     if (resp.status === 404) throw new Error('Entrant not found');
     if (!resp.ok) throw new Error('API error: ' + resp.status);
     const data = await resp.json();
-    // Build a set of lowercase song titles that are unlocked (unlockId !== -1)
     const charts = data?.data?.charts || [];
     const topScores = data?.data?.topScores || [];
-    const cleared = new Set();
+
+    // Set of every chartHash where unlockId !== -1
     const unlocked = new Set();
-    const played = new Set();
-    for (const chart of topScores) {
-        played.add(chart.hash);
-    }
-    
     for (const chart of charts) {
-        if (chart.title && chart.unlockId !== -1) {
-            if (played.has(chart.hash)) {
-                cleared.add(chart.title.toLowerCase());
-            } else {
-                unlocked.add(chart.title.toLowerCase());
-            }
+        if (chart.unlockId !== -1) {
+            unlocked.add(chart.hash);
         }
     }
+
+    // Set of every chartHash from topScores
+    const played = new Set();
+    for (const ts of topScores) {
+        played.add(ts.chartHash);
+    }
+
     const entrantName = data?.data?.entrant?.name || num;
-    return { cleared, unlocked, entrantName };
+    return { unlocked, played, entrantName };
 }
 
 // --- Highlighting ---
 function highlightCells(clearedSet, unlockedSet, entrantName) {
     unlockedSet = unlockedSet || new Set();
 
-    // First pass: mark unlock cells — always green if matched
+    //Mark Unlock Column: look up each song-cell's text in songHashMap, check hash against sets - green
     document.querySelectorAll('.song-cell.unlock-col').forEach(cell => {
-        const name = cell.dataset.song;
-        if (!name) return;
-        const lower = name.toLowerCase();
+        const cellText = cell.textContent.trim();
+        if (!cellText || !songHashMap) return;
+        const hash = songHashMap[cellText];
+        if (!hash) return;
         cell.classList.remove('cleared', 'unlocked', 'not-cleared');
-        if (clearedSet.has(lower) || unlockedSet.has(lower)) {
-            cell.classList.add('cleared');
+        if (clearedSet.has(hash) || unlockedSet.has(hash)) {
+            cell.classList.add('unlocked');
         } else {
             cell.classList.add('not-cleared');
         }
     });
 
-    // Second pass: highlight requirement cells — green if cleared, purple if only unlocked
+    // Requirements: First pass: mark played cells — purple and unlocked only - green
     let matched = 0, total = 0;
-    document.querySelectorAll('tbody[data-group]').forEach(tbody => {
-        const unlockCells = tbody.querySelectorAll('.unlock-col.song-cell');
-        const hasAnyUnlock = [...unlockCells].some(c => c.classList.contains('cleared'));
-
-        tbody.querySelectorAll('.req-col.song-cell').forEach(cell => {
-            const name = cell.dataset.song;
-            if (!name) return;
-            const lower = name.toLowerCase();
-            total++;
-            cell.classList.remove('cleared', 'unlocked', 'not-cleared');
-            if (hasAnyUnlock) {
-                if (clearedSet.has(lower)) {
-                    cell.classList.add('cleared');
-                } else if (unlockedSet.has(lower)) {
-                    cell.classList.add('unlocked');
-                } else {
-                    cell.classList.add('cleared');
-                }
-                matched++;
-            } else {
-                cell.classList.add('not-cleared');
-            }
-        });
-
-        // Count unlock cells too
-        unlockCells.forEach(cell => { if (cell.dataset.song) total++; });
-        matched += [...unlockCells].filter(c => c.classList.contains('cleared')).length;
+    document.querySelectorAll('.song-cell.req-col').forEach(cell => {
+        const cellText = cell.textContent.trim();
+        if (!cellText || !songHashMap) return;
+        const hash = songHashMap[cellText];
+        cell.classList.remove('cleared', 'unlocked', 'not-cleared');
+        matched++;
+        total++;
+        if (clearedSet.has(hash) ) {
+            cell.classList.add('cleared');
+        } else if (unlockedSet.has(hash)) {
+            cell.classList.add('unlocked');;
+        } else {
+            cell.classList.add('not-cleared');
+            matched--;
+        }
     });
 
     updateGroupCompletion();
@@ -219,9 +209,8 @@ function highlightCells(clearedSet, unlockedSet, entrantName) {
 
 function updateGroupCompletion() {
     document.querySelectorAll('tbody[data-group]').forEach(tbody => {
-        const reqCells = tbody.querySelectorAll('.req-col.song-cell');
-        if (reqCells.length === 0) return;
-        const allCleared = [...reqCells].some(c => c.classList.contains('cleared') || c.classList.contains('unlocked'));
+        const unlockCells = tbody.querySelectorAll('.unlock-col.song-cell');
+        const allCleared = [...unlockCells].some(c => c.classList.contains('cleared') || c.classList.contains('unlocked'));
         const nameCell = tbody.querySelector('.unlock-name');
         if (nameCell) nameCell.classList.toggle('complete', allCleared);
     });
@@ -248,8 +237,9 @@ async function loadEntrant() {
     document.getElementById('gs-link').href = `https://itl2026.groovestats.com/entrant/${num}?clearType=1`;
 
     try {
-        const { cleared, unlocked, entrantName } = await fetchEntrantData(num);
-        highlightCells(cleared, unlocked, entrantName);
+        const { unlocked, played, entrantName } = await fetchEntrantData(num);
+        console.log('unlocked size:', unlocked.size, 'played size:', played.size);
+        highlightCells(played, unlocked, entrantName);
     } catch (e) {
         setStatus('Error: ' + e.message + '. Use manual paste below.', 'error');
         document.getElementById('manual-fallback').style.display = 'block';
