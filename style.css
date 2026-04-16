@@ -59,9 +59,8 @@ td {
 }
 .unlock-name.complete { background: #1a4d2e; color: #7ee787; }
 .song-cell { min-width: 140px; transition: background-color 0.3s, color 0.3s; white-space: nowrap; }
-.song-cell.cleared { background: #1a4d2e; color: #7ee787; }
+.song-cell.cleared { background: #2d1b4e; color: #d2a8ff; }
 .song-cell.unlocked { background: #1a4d2e; color: #7ee787; }
-/*.song-cell.unlocked { background: #2d1b4e; color: #d2a8ff; }*/
 .song-cell.not-cleared { background: #1c1c2e; color: #6e7681; }
 .prereq { font-size: 0.75rem; font-style: italic; color: #8b949e; }
 .divider { border-left: 3px solid #484f58 !important; }
