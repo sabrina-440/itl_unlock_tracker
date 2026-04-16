@@ -204,7 +204,7 @@ function highlightCells(clearedSet, unlockedSet, entrantName) {
     });
 
     updateGroupCompletion();
-    setStatus(`Matched for user ${entrantName || 'unknown'}: ${matched} / ${total} songs. green = unlocked`, 'success');
+    setStatus(`Matched for user ${entrantName || 'unknown'}: ${matched} / ${total} songs. green = unlocked. purple = played`, 'success');
 }
 
 function updateGroupCompletion() {
