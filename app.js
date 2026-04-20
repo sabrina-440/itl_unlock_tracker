@@ -96,7 +96,17 @@ function buildTable(groups) {
                         td.className = 'song-cell req-col';
                         td.dataset.song = songName;
                     }
-                    td.textContent = val;
+                    const hash = songHashMap[val];
+                    const videoUrl = hash ? videoUrlMap[hash] : null;
+                    if (videoUrl) {
+                        const a = document.createElement('a');
+                        a.href = videoUrl;
+                        a.target = '_blank';
+                        a.textContent = val;
+                        td.appendChild(a);
+                    } else {
+                        td.textContent = val;
+                    }
                 }
                 songTr.appendChild(td);
             }
@@ -110,7 +120,17 @@ function buildTable(groups) {
                         td.className = 'song-cell unlock-col' + (c === 0 ? ' divider' : '');
                         td.dataset.song = songName;
                     }
-                    td.textContent = val;
+                    const hash = songHashMap[val];
+                    const videoUrl = hash ? videoUrlMap[hash] : null;
+                    if (videoUrl) {
+                        const a = document.createElement('a');
+                        a.href = videoUrl;
+                        a.target = '_blank';
+                        a.textContent = val;
+                        td.appendChild(a);
+                    } else {
+                        td.textContent = val;
+                    }
                 }
                 songTr.appendChild(td);
             }
@@ -136,8 +156,9 @@ function buildTable(groups) {
     }
 }
 
-// --- Song hash map (loaded from song_hash_map.js) ---
+// --- Song hash map (loaded from data.js) ---
 const songHashMap = SONG_HASH_MAP;
+const videoUrlMap = VIDEO_URL_MAP;
 
 // --- Fetch entrant data via proxy ---
 async function fetchEntrantData(num) {
